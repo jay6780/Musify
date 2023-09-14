@@ -1,0 +1,35 @@
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="5dp"
+    android:background="#272829">
+
+    <ImageView
+        android:id="@+id/combinedImageView"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:scaleType="fitCenter"
+        android:src="@drawable/ic_baseline_music_note_24" />
+
+    <TextView
+        android:id="@+id/combinedTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toEndOf="@id/combinedImageView"
+        android:layout_centerVertical="true"
+        android:layout_marginStart="8dp"
+        android:textAppearance="?android:textAppearanceMedium"
+        android:textColor="@android:color/white"
+        android:ellipsize="end"
+        android:maxLines="1" />
+
+    <View
+        android:id="@+id/separatorLine"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_below="@id/combinedImageView"
+        android:layout_marginTop="8dp"
+        android:background="@android:color/darker_gray" />
+
+</RelativeLayout>

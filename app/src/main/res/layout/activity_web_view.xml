@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <WebView
+        android:id="@+id/webview"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:elevation="10dp"
+        android:background="@drawable/grdient"
+        android:layout_height="wrap_content">
+
+        <EditText
+            android:id="@+id/editText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Paste Link here." />
+
+        <Button
+            android:id="@+id/pasteButton"
+            android:layout_height="wrap_content"
+            android:elevation="10dp"
+            android:backgroundTint="#B9B4C7"
+            android:layout_below="@+id/editText"
+            android:text="Download"
+            android:textSize="15dp"
+            android:textAllCaps="false"
+            android:textColor="@color/black"
+            android:layout_centerHorizontal="true"
+            android:layout_width="200dp"/>
+
+    </RelativeLayout>
+
+</LinearLayout>
