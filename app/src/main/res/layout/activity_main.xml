@@ -12,6 +12,7 @@
         android:id="@+id/card1"
         android:layout_marginTop="5dp"
         android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:cardElevation="10dp"
@@ -71,7 +72,6 @@
         android:id="@+id/music_recycler"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@+id/card1"
-        android:layout_marginTop="20dp" />
+        android:layout_above="@+id/card1"/>
 
 </RelativeLayout>

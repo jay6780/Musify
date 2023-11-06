@@ -2,7 +2,9 @@ package com.sl.music2;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -34,6 +36,7 @@ public class CombinedAdapter extends RecyclerView.Adapter<CombinedAdapter.Combin
     public void onBindViewHolder(@NonNull CombinedViewHolder holder, int position) {
         CombinedItem item = items.get(position);
         holder.bind(item, listener);
+        holder.rl.startAnimation(AnimationUtils.loadAnimation(holder.itemView.getContext(), R.anim.recyclerview_animation));
     }
 
     @Override
@@ -45,10 +48,10 @@ public class CombinedAdapter extends RecyclerView.Adapter<CombinedAdapter.Combin
 
         private TextView combinedTextView;
         private ImageView combinedImageView; // Add ImageView for displaying images
-
+        RelativeLayout rl;
         CombinedViewHolder(@NonNull View itemView) {
             super(itemView);
-
+            rl = itemView.findViewById(R.id.anim);
             combinedTextView = itemView.findViewById(R.id.combinedTextView);
             combinedImageView = itemView.findViewById(R.id.combinedImageView); // Initialize ImageView
 

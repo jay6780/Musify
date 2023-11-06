@@ -10,7 +10,9 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.util.SparseArray;
 import android.view.View;
+import android.view.WindowManager;
 import android.webkit.DownloadListener;
 import android.webkit.URLUtil;
 import android.webkit.WebSettings;
@@ -18,11 +20,13 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.EditText;
-
+import android.widget.Toast;
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import java.io.File;
 
 public class WebViewActivity extends AppCompatActivity {
 
@@ -32,17 +36,18 @@ public class WebViewActivity extends AppCompatActivity {
     private WebView webView;
     private EditText editText;
     private Button pasteButton;
+    private String youtubeUrl;
 
     @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_web_view);
-
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) {
             actionBar.hide();
         }
-
+        showDownloadPromptDialog();
         webView = findViewById(R.id.webview);
         editText = findViewById(R.id.editText);
         pasteButton = findViewById(R.id.pasteButton);
@@ -60,16 +65,7 @@ public class WebViewActivity extends AppCompatActivity {
         webSettings.setUseWideViewPort(true);
         webView.setInitialScale(1);
         webSettings.setMediaPlaybackRequiresUserGesture(false);
-        showDownloadPromptDialog();
-        webView.setWebViewClient(new WebViewClient() {
-            @Override
-            public void onPageFinished(WebView view, String url) {
-                super.onPageFinished(view, url);
-                if (isYouTubeLink(url)) {
-                    webView.loadUrl("https://www.y2mate.com/en1842/youtube-mp3");
-                }
-            }
-        });
+        webView.setWebViewClient(new WebViewClient());
 
         // Set up the WebView download listener
         webView.setDownloadListener(new DownloadListener() {
@@ -86,20 +82,8 @@ public class WebViewActivity extends AppCompatActivity {
                     return;
                 }
 
-                // Create a DownloadManager request
-                DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
-                request.setMimeType(mimetype);
-
-                // Dynamically generate the file name based on the download link
-                String fileName = URLUtil.guessFileName(url, contentDisposition, mimetype);
-
-                request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName);
-                request.allowScanningByMediaScanner();
-                request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-
-                // Get download service and enqueue the request
-                DownloadManager downloadManager = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
-                downloadManager.enqueue(request);
+                // Start the download
+                downloadFile(url, mimetype);
             }
         });
 
@@ -107,20 +91,63 @@ public class WebViewActivity extends AppCompatActivity {
         pasteButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String pastedText = editText.getText().toString().trim();
-                if (isYouTubeLink(pastedText)) {
-                    showDownloadConfirmationDialog(pastedText,musicUrl); // Show confirmation dialog for YouTube link
-                } else {
-                    loadUrl(pastedText); // Load the pasted URL
+                youtubeUrl = editText.getText().toString().trim();
+                if (isYouTubeLink(youtubeUrl)) {
+                    downloadYouTubeVideo(youtubeUrl);
                 }
             }
         });
     }
 
+    // Download a YouTube video's MP3 audio
+    private void downloadYouTubeVideo(String youtubeUrl) {
+        YouTubeExtractor youTubeExtractor = new YouTubeExtractor(this) {
+            @Override
+            protected void onExtractionComplete(SparseArray<YtFile> ytFiles, VideoMeta videoMeta) {
+                if (ytFiles != null) {
+                    // Choose the format you want to download (e.g., itag 140 for MP3)
+                    YtFile mp3File = ytFiles.get(140);
+                    if (mp3File != null) {
+                        // Start the download
+                        downloadFile(mp3File.getUrl(), "audio/mpeg");
+                    } else {
+                        Toast.makeText(WebViewActivity.this, "No suitable MP3 format found for download", Toast.LENGTH_SHORT).show();
+                    }
+                } else {
+                    Toast.makeText(WebViewActivity.this, "Failed to extract video links", Toast.LENGTH_SHORT).show();
+                }
+            }
+        };
+        youTubeExtractor.execute(youtubeUrl);
+    }
+
+    // Download a file
+// Download a file
+    private void downloadFile(String url, String mimetype) {
+        DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
+        request.setMimeType(mimetype);
+
+        // Dynamically generate the file name based on the download link
+        String fileName = URLUtil.guessFileName(url, null, mimetype);
+        File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName);
+        request.setDestinationUri(Uri.fromFile(file));
+
+        // Set the notification title
+        request.setTitle("Mp3 Download");
+
+        request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+
+        // Get download service and enqueue the request
+        DownloadManager downloadManager = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+        downloadManager.enqueue(request);
+    }
+
+
+
     private void showDownloadPromptDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setTitle("Download Music")
-                .setMessage("To download music, paste a YouTube URL below:")
+                .setMessage("To download music, paste a URL below:")
                 .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
@@ -130,57 +157,15 @@ public class WebViewActivity extends AppCompatActivity {
                 .show();
     }
 
-    private void showDownloadConfirmationDialog(final String youtubeUrl, final String musicUrl) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Download Music")
-                .setMessage("Do you want to download the music from the YouTube link?")
-                .setPositiveButton("Download", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        // Proceed with downloading
-                        loadUrl("https://www.y2mate.com/en1842/youtube-mp3"); // Load the conversion site
-                    }
-                })
-                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        // Cancel the download
-                        loadUrl(musicUrl); // Load the original music URL
-                    }
-                })
-                .setOnCancelListener(new DialogInterface.OnCancelListener() {
-                    @Override
-                    public void onCancel(DialogInterface dialog) {
-                        // Handle canceling the dialog (if the user presses the back button)
-                        loadUrl(musicUrl); // Load the original music URL
-                    }
-                })
-                .show();
-    }
-
-
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == REQUEST_PERMISSION_WRITE_EXTERNAL_STORAGE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Permission granted, proceed with the download
-                webView.reload(); // Reload the WebView to trigger the download again
+                downloadFile(youtubeUrl, "audio/mpeg");
             } else {
                 // Permission denied, handle accordingly
             }
-        }
-    }
-
-    @Override
-    public void onBackPressed() {
-        if (webView.canGoBack()) {
-            webView.goBack();
-        } else {
-            Intent i = new Intent(getApplicationContext(), MainActivity.class);
-            startActivity(i);
-            overridePendingTransition(0, 0);
-            super.onBackPressed();
         }
     }
 
@@ -194,3 +179,5 @@ public class WebViewActivity extends AppCompatActivity {
         return url.contains("youtube.com") || url.contains("youtu.be");
     }
 }
+
+
